@@ -1,0 +1,530 @@
+"use client";
+
+import React, { useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Badge } from "../ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
+import { 
+  ArrowLeft,
+  Calendar,
+  Search,
+  Filter,
+  Plus,
+  Eye,
+  Edit,
+  Trash2,
+  Clock,
+  User,
+  MapPin,
+  Stethoscope,
+  CheckCircle,
+  AlertCircle,
+  XCircle
+} from "lucide-react";
+
+const mockAppointments = [
+  {
+    id: "APT-001",
+    date: "2025-12-20",
+    time: "2:00 PM",
+    client: "Emma Johnson",
+    email: "emma.johnson@email.com",
+    phone: "(555) 123-4567",
+    service: "Botox Injections",
+    provider: "Dr. Chen",
+    location: "Downtown Clinic",
+    status: "scheduled",
+    duration: 30,
+    notes: "First time patient",
+    createdAt: "2025-12-15T10:30:00Z"
+  },
+  {
+    id: "APT-002",
+    date: "2025-12-20",
+    time: "10:30 AM",
+    client: "Sarah Davis",
+    email: "sarah.davis@email.com",
+    phone: "(555) 234-5678",
+    service: "Dermal Fillers",
+    provider: "Dr. Johnson",
+    location: "Westside Location",
+    status: "completed",
+    duration: 45,
+    notes: "Follow-up appointment",
+    createdAt: "2025-12-10T14:20:00Z"
+  },
+  {
+    id: "APT-003",
+    date: "2025-12-21",
+    time: "3:15 PM",
+    client: "Jessica Martinez",
+    email: "jessica.martinez@email.com",
+    phone: "(555) 345-6789",
+    service: "Hydrafacial",
+    provider: "Dr. Smith",
+    location: "Northside Branch",
+    status: "scheduled",
+    duration: 60,
+    notes: "Regular maintenance",
+    createdAt: "2025-12-18T09:15:00Z"
+  },
+  {
+    id: "APT-004",
+    date: "2025-12-19",
+    time: "11:00 AM",
+    client: "Amanda Wilson",
+    email: "amanda.wilson@email.com",
+    phone: "(555) 456-7890",
+    service: "Laser Hair Removal",
+    provider: "Dr. Chen",
+    location: "Downtown Clinic",
+    status: "cancelled",
+    duration: 30,
+    notes: "Client cancelled due to scheduling conflict",
+    createdAt: "2025-12-12T16:45:00Z"
+  },
+  {
+    id: "APT-005",
+    date: "2025-12-22",
+    time: "1:30 PM",
+    client: "Lisa Anderson",
+    email: "lisa.anderson@email.com",
+    phone: "(555) 567-8901",
+    service: "IV Therapy",
+    provider: "Dr. Johnson",
+    location: "Westside Location",
+    status: "scheduled",
+    duration: 45,
+    notes: "Wellness package",
+    createdAt: "2025-12-17T11:30:00Z"
+  },
+  {
+    id: "APT-006",
+    date: "2025-12-18",
+    time: "9:00 AM",
+    client: "Michael Chen",
+    email: "michael.chen@email.com",
+    phone: "(555) 678-9012",
+    service: "PRP Treatment",
+    provider: "Dr. Smith",
+    location: "Northside Branch",
+    status: "completed",
+    duration: 90,
+    notes: "Excellent results",
+    createdAt: "2025-12-05T13:20:00Z"
+  },
+  {
+    id: "APT-007",
+    date: "2025-12-23",
+    time: "4:00 PM",
+    client: "Emma Johnson",
+    email: "emma.johnson@email.com",
+    phone: "(555) 123-4567",
+    service: "Follow-up Consultation",
+    provider: "Dr. Chen",
+    location: "Downtown Clinic",
+    status: "scheduled",
+    duration: 15,
+    notes: "Post-treatment check",
+    createdAt: "2025-12-19T15:10:00Z"
+  },
+  {
+    id: "APT-008",
+    date: "2025-12-17",
+    time: "2:30 PM",
+    client: "Sarah Davis",
+    email: "sarah.davis@email.com",
+    phone: "(555) 234-5678",
+    service: "Consultation",
+    provider: "Dr. Johnson",
+    location: "Westside Location",
+    status: "completed",
+    duration: 30,
+    notes: "Initial consultation completed",
+    createdAt: "2025-12-01T10:00:00Z"
+  }
+];
+
+const statusColors = {
+  scheduled: "bg-blue-100 text-blue-800 border-blue-200",
+  completed: "bg-green-100 text-green-800 border-green-200",
+  cancelled: "bg-red-100 text-red-800 border-red-200",
+  no_show: "bg-orange-100 text-orange-800 border-orange-200",
+  rescheduled: "bg-yellow-100 text-yellow-800 border-yellow-200"
+};
+
+const statusIcons = {
+  scheduled: Clock,
+  completed: CheckCircle,
+  cancelled: XCircle,
+  no_show: AlertCircle,
+  rescheduled: Clock
+};
+
+export function AppointmentList({ onPageChange }) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [providerFilter, setProviderFilter] = useState("all");
+  const [locationFilter, setLocationFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState("all");
+
+  const filteredAppointments = mockAppointments.filter(appointment => {
+    const matchesSearch = 
+      appointment.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      appointment.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      appointment.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      appointment.email.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === "all" || appointment.status === statusFilter;
+    const matchesProvider = providerFilter === "all" || appointment.provider === providerFilter;
+    const matchesLocation = locationFilter === "all" || appointment.location === locationFilter;
+    
+    return matchesSearch && matchesStatus && matchesProvider && matchesLocation;
+  });
+
+  const formatDate = (dateString) =>
+    new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+
+  const formatTime = (timeString) => {
+    return timeString;
+  };
+
+  const getStatusIcon = (status) => {
+    const IconComponent = statusIcons[status];
+    return <IconComponent className="h-4 w-4" />;
+  };
+
+  const getProviders = () => {
+    const providers = [...new Set(mockAppointments.map(apt => apt.provider))];
+    return providers;
+  };
+
+  const getLocations = () => {
+    const locations = [...new Set(mockAppointments.map(apt => apt.location))];
+    return locations;
+  };
+
+  const getStatusCounts = () => {
+    const counts = {
+      scheduled: 0,
+      completed: 0,
+      cancelled: 0,
+      no_show: 0,
+      rescheduled: 0
+    };
+    
+    mockAppointments.forEach(apt => {
+      counts[apt.status] = (counts[apt.status] || 0) + 1;
+    });
+    
+    return counts;
+  };
+
+  const statusCounts = getStatusCounts();
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onPageChange("dashboard")}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Dashboard
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">All Appointments</h1>
+            <p className="text-muted-foreground">Manage and view all appointment records</p>
+          </div>
+        </div>
+        <Button
+          onClick={() => onPageChange("appointments/book")}
+          className="bg-primary hover:bg-primary/90 text-primary-foreground"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          New Appointment
+        </Button>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+        <Card className="bg-card border-border">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-foreground">
+              Total Appointments
+            </CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-foreground">
+              {mockAppointments.length}
+            </div>
+            <p className="text-xs text-muted-foreground">All time</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-border">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-foreground">
+              Scheduled
+            </CardTitle>
+            <Clock className="h-4 w-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">
+              {statusCounts.scheduled}
+            </div>
+            <p className="text-xs text-muted-foreground">Upcoming</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-border">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-foreground">
+              Completed
+            </CardTitle>
+            <CheckCircle className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              {statusCounts.completed}
+            </div>
+            <p className="text-xs text-muted-foreground">Finished</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-border">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-foreground">
+              Cancelled
+            </CardTitle>
+            <XCircle className="h-4 w-4 text-red-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">
+              {statusCounts.cancelled}
+            </div>
+            <p className="text-xs text-muted-foreground">Cancelled</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-border">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-foreground">
+              No Shows
+            </CardTitle>
+            <AlertCircle className="h-4 w-4 text-orange-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">
+              {statusCounts.no_show}
+            </div>
+            <p className="text-xs text-muted-foreground">Missed</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <div className="flex items-center space-x-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search appointments by client, service, or ID..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-input-background border-border focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[150px] bg-input-background border-border">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="scheduled">Scheduled</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+                <SelectItem value="no_show">No Show</SelectItem>
+                <SelectItem value="rescheduled">Rescheduled</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={providerFilter} onValueChange={setProviderFilter}>
+              <SelectTrigger className="w-[150px] bg-input-background border-border">
+                <SelectValue placeholder="Provider" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Providers</SelectItem>
+                {getProviders().map(provider => (
+                  <SelectItem key={provider} value={provider}>
+                    {provider}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={locationFilter} onValueChange={setLocationFilter}>
+              <SelectTrigger className="w-[150px] bg-input-background border-border">
+                <SelectValue placeholder="Location" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Locations</SelectItem>
+                {getLocations().map(location => (
+                  <SelectItem key={location} value={location}>
+                    {location}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              className="border-border hover:bg-primary/5 hover:border-primary/30"
+            >
+              <Filter className="mr-2 h-4 w-4" />
+              More Filters
+            </Button>
+          </div>
+        </CardHeader>
+      </Card>
+
+      {/* Appointments Table */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle>Appointments</CardTitle>
+          <CardDescription>
+            {filteredAppointments.length} appointment{filteredAppointments.length !== 1 ? 's' : ''} found
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Appointment ID</TableHead>
+                <TableHead>Date & Time</TableHead>
+                <TableHead>Client</TableHead>
+                <TableHead>Service</TableHead>
+                <TableHead>Provider</TableHead>
+                <TableHead>Location</TableHead>
+                <TableHead>Duration</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredAppointments.map((appointment) => (
+                <TableRow key={appointment.id}>
+                  <TableCell className="font-mono text-sm">
+                    {appointment.id}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center space-x-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <div className="font-medium">{formatDate(appointment.date)}</div>
+                        <div className="text-sm text-muted-foreground">{formatTime(appointment.time)}</div>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div>
+                      <div className="font-medium">{appointment.client}</div>
+                      <div className="text-sm text-muted-foreground">{appointment.email}</div>
+                      <div className="text-sm text-muted-foreground">{appointment.phone}</div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center space-x-2">
+                      <Stethoscope className="h-4 w-4 text-muted-foreground" />
+                      <span>{appointment.service}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center space-x-2">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">{appointment.provider}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center space-x-2">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">{appointment.location}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center space-x-2">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <span>{appointment.duration} min</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant="outline"
+                      className={`${statusColors[appointment.status]} border`}
+                    >
+                      <div className="flex items-center space-x-1">
+                        {getStatusIcon(appointment.status)}
+                        <span className="capitalize">{appointment.status.replace('_', ' ')}</span>
+                      </div>
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end space-x-2">
+                      <Button variant="ghost" size="sm">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm">
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Quick Actions */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle>Quick Actions</CardTitle>
+          <CardDescription>Common appointment management tasks</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex space-x-4">
+            <Button variant="outline" className="border-border hover:bg-primary/5">
+              <Calendar className="h-4 w-4 mr-2" />
+              View Calendar
+            </Button>
+            <Button variant="outline" className="border-border hover:bg-primary/5">
+              <Plus className="h-4 w-4 mr-2" />
+              Bulk Import
+            </Button>
+            <Button variant="outline" className="border-border hover:bg-primary/5">
+              <Filter className="h-4 w-4 mr-2" />
+              Export Data
+            </Button>
+            <Button variant="outline" className="border-border hover:bg-primary/5">
+              <Clock className="h-4 w-4 mr-2" />
+              Send Reminders
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
