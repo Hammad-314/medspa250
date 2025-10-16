@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { apiFetch } from "../../utilits/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -125,73 +124,12 @@ export function AddClient({ onPageChange }) {
     }
     
     setIsSubmitting(true);
-    setErrors({});
     
-    try {
-      const payload = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        phone: formData.phone,
-        dateOfBirth: formData.dateOfBirth,
-        gender: formData.gender,
-        street: formData.street,
-        city: formData.city,
-        state: formData.state,
-        zipCode: formData.zipCode,
-        country: formData.country,
-        emergencyName: formData.emergencyName,
-        emergencyPhone: formData.emergencyPhone,
-        emergencyRelation: formData.emergencyRelation,
-        allergies: formData.allergies,
-        medications: formData.medications,
-        medicalConditions: formData.medicalConditions,
-        skinType: formData.skinType,
-        previousTreatments: formData.previousTreatments,
-        treatmentAreas: formData.treatmentAreas,
-        referralSource: formData.referralSource,
-        notes: formData.notes,
-        emailMarketing: formData.emailMarketing,
-        smsMarketing: formData.smsMarketing,
-        phoneMarketing: formData.phoneMarketing,
-      };
-      
-      console.log('Creating client with payload:', payload);
-      const result = await apiFetch('public/clients', { 
-        method: 'POST', 
-        body: JSON.stringify(payload) 
-      });
-      
-      console.log('Client creation success:', result);
-      setSuccess(true);
-      
-    } catch (err) {
-      console.error('Client creation error:', err);
-      console.error('Error details:', {
-        status: err.status,
-        data: err.data,
-        raw: err.raw,
-        message: err.message
-      });
-      
-      let errorMessage = "Failed to create client. ";
-      
-      if (err.data && err.data.errors) {
-        errorMessage += Object.values(err.data.errors).join(', ');
-      } else if (err.raw) {
-        errorMessage += err.raw;
-      } else if (err.data && err.data.message) {
-        errorMessage += err.data.message;
-      } else if (err.data && err.data.error) {
-        errorMessage += err.data.error;
-      } else {
-        errorMessage += err.message || "Please try again.";
-      }
-      
-      setErrors({ general: errorMessage });
-    } finally {
-      setIsSubmitting(false);
-    }
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    setIsSubmitting(false);
+    setSuccess(true);
   };
 
   if (success) {
@@ -292,14 +230,6 @@ export function AddClient({ onPageChange }) {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* General Error */}
-        {errors.general && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{errors.general}</AlertDescription>
-          </Alert>
-        )}
-        
         {/* Personal Information */}
         <Card className="bg-card border-border">
           <CardHeader>

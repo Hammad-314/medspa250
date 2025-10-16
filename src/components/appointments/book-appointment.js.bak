@@ -1,9 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import axios from "axios";
-import { toast } from "sonner";
-import { useAuth } from "../auth-context";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -26,13 +23,12 @@ import {
 } from "lucide-react";
 
 const services = [
-  { id: 1, name: "Initial Consultation", duration: 30, price: 100, description: "Initial consultation and assessment" },
-  // Note: These are mock services for UI display. Only ID 1 exists in the database.
-  { id: 2, name: "Botox Injections", duration: 30, price: 400, description: "Anti-aging facial treatment" },
-  { id: 3, name: "Dermal Fillers", duration: 45, price: 600, description: "Volume restoration and contouring" },
-  { id: 4, name: "Hydrafacial", duration: 60, price: 180, description: "Deep cleansing and hydrating facial" },
-  { id: 5, name: "Laser Hair Removal", duration: 30, price: 150, description: "Permanent hair reduction" },
-  { id: 6, name: "IV Therapy", duration: 45, price: 200, description: "Vitamin and nutrient infusion" },
+  { id: "botox", name: "Botox Injections", duration: 30, price: 400, description: "Anti-aging facial treatment" },
+  { id: "filler", name: "Dermal Fillers", duration: 45, price: 600, description: "Volume restoration and contouring" },
+  { id: "hydrafacial", name: "Hydrafacial", duration: 60, price: 180, description: "Deep cleansing and hydrating facial" },
+  { id: "laser", name: "Laser Hair Removal", duration: 30, price: 150, description: "Permanent hair reduction" },
+  { id: "iv", name: "IV Therapy", duration: 45, price: 200, description: "Vitamin and nutrient infusion" },
+  { id: "prp", name: "PRP Treatment", duration: 90, price: 500, description: "Platelet-rich plasma therapy" },
 ];
 
 const providers = [
@@ -55,7 +51,6 @@ const timeSlots = [
 ];
 
 export function BookAppointment({ onPageChange }) {
-  const { user } = useAuth();
   const [step, setStep] = useState(1);
   const [selectedService, setSelectedService] = useState("");
   const [selectedProvider, setSelectedProvider] = useState("");
@@ -101,103 +96,139 @@ export function BookAppointment({ onPageChange }) {
     setClientInfo(prev => ({ ...prev, [field]: value }));
   };
 
-  // Helper function to convert time string to 24-hour format
-  const convertTimeTo24Hour = (timeString) => {
-    const [time, period] = timeString.split(' ');
-    const [hours, minutes] = time.split(':');
-    let hour24 = parseInt(hours);
-    
-    if (period === 'PM' && hour24 !== 12) {
-      hour24 += 12;
-    } else if (period === 'AM' && hour24 === 12) {
-      hour24 = 0;
-    }
-    
-    return `${hour24.toString().padStart(2, '0')}:${minutes}`;
-  };
-
-  // Helper function to create valid date/time objects
-  const createDateTime = (date, timeString) => {
-    try {
-      const time24Hour = convertTimeTo24Hour(timeString);
-      const dateString = date.toISOString().split('T')[0]; // Get YYYY-MM-DD format
-      const dateTimeString = `${dateString}T${time24Hour}:00`;
-      const dateTime = new Date(dateTimeString);
-      
-      if (isNaN(dateTime.getTime())) {
-        throw new Error('Invalid date/time combination');
-      }
-      
-      return dateTime;
-    } catch (error) {
-      throw new Error(`Invalid date/time: ${error.message}`);
-    }
-  };
-
   const handleBooking = async () => {
     setIsBooking(true);
     setBookingError("");
     
     try {
-      // Validate required fields
-      if (!clientInfo.name || !clientInfo.email || !clientInfo.phone) {
-        throw new Error("Please fill in all required client information");
-      }
-
-      // Create simplified booking payload with only essential fields
-      const formData = {
-        name: clientInfo.name,
-        email: clientInfo.email,
-        phone: clientInfo.phone,
-        about: clientInfo.notes || "" // Map notes to about field
+      // Prepare appointment data
+      const appointmentData = {
+        service_id: selectedService,
+        service_name: getSelectedService()?.name,
+        provider_id: selectedProvider,
+        provider_name: getSelectedProvider()?.name,
+        location_id: selectedLocation,
+        location_name: getSelectedLocation()?.name,
+        appointment_date: selectedDate.toISOString().split('T')[0], // YYYY-MM-DD format
+        appointment_time: selectedTime,
+        duration: getSelectedService()?.duration,
+        client_name: clientInfo.name,
+        client_email: clientInfo.email,
+        client_phone: clientInfo.phone,
+        notes: clientInfo.notes,
+        status: "scheduled"
       };
 
-      // Add user ID if available (fallback for non-authenticated users)
-      if (user?.id) {
-        formData.userId = user.id;
-      }
-      
-      // Add debugging log as requested
-      console.log('Booking request:', formData);
-      
-      // Prepare headers with authentication
-      const headers = {
-        'Content-Type': 'application/json'
-      };
+      console.log("Booking appointment with data:", appointmentData);
 
-      // Add Authorization header if user is authenticated
-      const token = localStorage.getItem('access_token');
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
+      // Get authentication token
+      const token = localStorage.getItem("access_token");
+      console.log("Using token:", token ? "Yes (length: " + token.length + ")" : "No");
       
-      // Use axios POST call as requested
-      const res = await axios.post('/api/bookings', formData, { headers });
-      
-      console.log('Booking success:', res.data);
-      
-      // Show success message
-      alert(res.data.message);
-      
-      // Show success toast
-      toast.success('Appointment booked successfully!', {
-        description: `Thank you ${clientInfo.name}! We'll contact you soon to confirm your appointment.`
+      const response = await fetch("http://127.0.0.1:8000/api/appointments", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          ...(token && { "Authorization": `Bearer ${token}` })
+        },
+        body: JSON.stringify(appointmentData)
       });
+
+      console.log("Booking API response status:", response.status);
+
+      if (!response.ok) {
+        let errorMessage = `Failed to book appointment: ${response.status}`;
+        
+        try {
+          const errorData = await response.json();
+          console.error("Booking API error details:", errorData);
+          
+          // Handle different error response formats
+          if (errorData && typeof errorData === 'object') {
+            if (errorData.message) {
+              errorMessage = errorData.message;
+            } else if (errorData.error) {
+              errorMessage = errorData.error;
+            } else if (errorData.errors) {
+              // Handle validation errors
+              if (Array.isArray(errorData.errors)) {
+                errorMessage = errorData.errors.join(', ');
+              } else if (typeof errorData.errors === 'object') {
+                errorMessage = Object.values(errorData.errors).join(', ');
+              }
+            } else if (Object.keys(errorData).length === 0) {
+              // Empty error object - use status-based message
+              errorMessage = `Server returned ${response.status} with empty error response`;
+            } else {
+              // Try to extract any meaningful error from the object
+              const errorValues = Object.values(errorData).filter(val => 
+                typeof val === 'string' && val.length > 0
+              );
+              if (errorValues.length > 0) {
+                errorMessage = errorValues.join(', ');
+              }
+            }
+          }
+        } catch (parseError) {
+          console.error("Could not parse booking error response:", parseError);
+          // If we can't parse JSON, try to get text response
+          try {
+            const textResponse = await response.text();
+            if (textResponse) {
+              errorMessage = `Server error: ${textResponse}`;
+            }
+          } catch (textError) {
+            console.error("Could not parse text response:", textError);
+          }
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      const result = await response.json();
+      console.log("Booking API success response:", result);
       
-      setBookingSuccess(true);
-      setStep(7);
+      // Handle different success response formats
+      if (result && (result.success || result.id || result.appointment_id)) {
+        setBookingSuccess(true);
+        setStep(7); // Success step
+      } else {
+        // If response is successful but doesn't contain expected data
+        console.warn("API returned success but unexpected response format:", result);
+        setBookingSuccess(true);
+        setStep(7); // Still show success since HTTP was 200
+      }
       
     } catch (error) {
-      // Log error for debugging
-      console.error('Booking error:', error.response?.data || error.message);
+      console.error("Error booking appointment:", error);
       
-      // Handle error properly as requested
-      const errorMessage = error.response?.data?.message || 'Booking failed!';
-      alert(errorMessage);
+      let errorMessage = "Failed to book appointment. ";
+      
+      // Handle network errors
+      if (error.name === "TypeError" && error.message.includes("Failed to fetch")) {
+        errorMessage += "Network error. Please check if the backend server is running on http://127.0.0.1:8000";
+        
+        // Show additional help for network errors
+        console.log("Network error detected. Backend server might not be running.");
+        console.log("Please ensure your backend server is running on http://127.0.0.1:8000");
+      } else if (error.message.includes("404")) {
+        errorMessage += "Booking endpoint not found. The /api/appointments endpoint may not exist on your backend.";
+      } else if (error.message.includes("500")) {
+        errorMessage += "Server error. Please try again later.";
+      } else if (error.message.includes("401")) {
+        errorMessage += "Please login to book an appointment.";
+      } else if (error.message.includes("403")) {
+        errorMessage += "You don't have permission to book appointments.";
+      } else if (error.message.includes("400")) {
+        errorMessage += "Invalid appointment data. Please check your information.";
+      } else if (error.message.includes("empty error response")) {
+        errorMessage += "Backend returned an empty error response. Please check your server configuration.";
+      } else {
+        errorMessage += error.message || "Please try again.";
+      }
       
       setBookingError(errorMessage);
-      toast.error(errorMessage);
-      
     } finally {
       setIsBooking(false);
     }

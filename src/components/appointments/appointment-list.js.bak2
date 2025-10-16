@@ -167,8 +167,6 @@ const statusIcons = {
 
 export function AppointmentList({ onPageChange }) {
   const [appointments, setAppointments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [providerFilter, setProviderFilter] = useState("all");
@@ -178,16 +176,11 @@ export function AppointmentList({ onPageChange }) {
   useEffect(() => {
     const load = async () => {
       try { 
-        setLoading(true);
-        setError("");
         const data = await apiFetch('public/appointments'); 
         setAppointments(data || []); 
       } catch(err){ 
         console.error('Load appointments error', err); 
-        setError('Failed to load appointments');
         setAppointments([]); 
-      } finally {
-        setLoading(false);
       }
     };
     load();
@@ -455,41 +448,22 @@ export function AppointmentList({ onPageChange }) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {error && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-red-800">{error}</p>
-            </div>
-          )}
-          
-          {loading ? (
-            <div className="flex justify-center items-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              <span className="ml-2 text-muted-foreground">Loading appointments...</span>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Date & Time</TableHead>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Service</TableHead>
-                  <TableHead>Provider</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Duration</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredAppointments.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                      {appointments.length === 0 ? "No appointments found" : "No appointments match your search criteria"}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredAppointments.map((appointment) => (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>ID</TableHead>
+                <TableHead>Date & Time</TableHead>
+                <TableHead>Client</TableHead>
+                <TableHead>Service</TableHead>
+                <TableHead>Provider</TableHead>
+                <TableHead>Location</TableHead>
+                <TableHead>Duration</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredAppointments.map((appointment) => (
                 <TableRow key={appointment.id}>
                   <TableCell className="font-mono text-sm">
                     {appointment.id}
@@ -559,11 +533,9 @@ export function AppointmentList({ onPageChange }) {
                     </div>
                   </TableCell>
                 </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          )}
+              ))}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
 

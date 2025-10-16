@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { apiFetch } from "../../utilits/api";
+import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -166,43 +165,22 @@ const statusIcons = {
 };
 
 export function AppointmentList({ onPageChange }) {
-  const [appointments, setAppointments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [providerFilter, setProviderFilter] = useState("all");
   const [locationFilter, setLocationFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
 
-  useEffect(() => {
-    const load = async () => {
-      try { 
-        setLoading(true);
-        setError("");
-        const data = await apiFetch('public/appointments'); 
-        setAppointments(data || []); 
-      } catch(err){ 
-        console.error('Load appointments error', err); 
-        setError('Failed to load appointments');
-        setAppointments([]); 
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, []);
-
-  const filteredAppointments = appointments.filter(appointment => {
+  const filteredAppointments = mockAppointments.filter(appointment => {
     const matchesSearch = 
-      (appointment.client?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (appointment.service?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      appointment.id?.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (appointment.client?.email || '').toLowerCase().includes(searchTerm.toLowerCase());
+      appointment.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      appointment.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      appointment.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      appointment.email.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === "all" || appointment.status === statusFilter;
-    const matchesProvider = providerFilter === "all" || (appointment.staff?.name || appointment.provider) === providerFilter;
-    const matchesLocation = locationFilter === "all" || (appointment.location?.name || appointment.location) === locationFilter;
+    const matchesProvider = providerFilter === "all" || appointment.provider === providerFilter;
+    const matchesLocation = locationFilter === "all" || appointment.location === locationFilter;
     
     return matchesSearch && matchesStatus && matchesProvider && matchesLocation;
   });
@@ -224,12 +202,12 @@ export function AppointmentList({ onPageChange }) {
   };
 
   const getProviders = () => {
-    const providers = [...new Set(appointments.map(apt => apt.staff?.name || apt.provider).filter(Boolean))];
+    const providers = [...new Set(mockAppointments.map(apt => apt.provider))];
     return providers;
   };
 
   const getLocations = () => {
-    const locations = [...new Set(appointments.map(apt => apt.location?.name || apt.location).filter(Boolean))];
+    const locations = [...new Set(mockAppointments.map(apt => apt.location))];
     return locations;
   };
 
@@ -242,7 +220,7 @@ export function AppointmentList({ onPageChange }) {
       rescheduled: 0
     };
     
-    appointments.forEach(apt => {
+    mockAppointments.forEach(apt => {
       counts[apt.status] = (counts[apt.status] || 0) + 1;
     });
     
@@ -455,41 +433,22 @@ export function AppointmentList({ onPageChange }) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {error && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-red-800">{error}</p>
-            </div>
-          )}
-          
-          {loading ? (
-            <div className="flex justify-center items-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              <span className="ml-2 text-muted-foreground">Loading appointments...</span>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Date & Time</TableHead>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Service</TableHead>
-                  <TableHead>Provider</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Duration</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredAppointments.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                      {appointments.length === 0 ? "No appointments found" : "No appointments match your search criteria"}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredAppointments.map((appointment) => (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>ID</TableHead>
+                <TableHead>Date & Time</TableHead>
+                <TableHead>Client</TableHead>
+                <TableHead>Service</TableHead>
+                <TableHead>Provider</TableHead>
+                <TableHead>Location</TableHead>
+                <TableHead>Duration</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredAppointments.map((appointment) => (
                 <TableRow key={appointment.id}>
                   <TableCell className="font-mono text-sm">
                     {appointment.id}
@@ -498,34 +457,34 @@ export function AppointmentList({ onPageChange }) {
                     <div className="flex items-center space-x-2">
                       <Calendar className="h-4 w-4 text-muted-foreground" />
                       <div>
-                        <div className="font-medium">{formatDate(appointment.start_time || appointment.date)}</div>
-                        <div className="text-sm text-muted-foreground">{formatTime(appointment.start_time || appointment.time)}</div>
+                        <div className="font-medium">{formatDate(appointment.date)}</div>
+                        <div className="text-sm text-muted-foreground">{formatTime(appointment.time)}</div>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div>
-                      <div className="font-medium">{appointment.client?.name || appointment.client}</div>
-                      <div className="text-sm text-muted-foreground">{appointment.client?.email || appointment.email}</div>
-                      <div className="text-sm text-muted-foreground">{appointment.client?.phone || appointment.phone}</div>
+                      <div className="font-medium">{appointment.client}</div>
+                      <div className="text-sm text-muted-foreground">{appointment.email}</div>
+                      <div className="text-sm text-muted-foreground">{appointment.phone}</div>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
                       <Stethoscope className="h-4 w-4 text-muted-foreground" />
-                      <span>{appointment.service?.name || appointment.service}</span>
+                      <span>{appointment.service}</span>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
                       <User className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">{appointment.staff?.name || appointment.provider}</span>
+                      <span className="text-sm">{appointment.provider}</span>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
                       <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">{appointment.location?.name || appointment.location}</span>
+                      <span className="text-sm">{appointment.location}</span>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -559,11 +518,9 @@ export function AppointmentList({ onPageChange }) {
                     </div>
                   </TableCell>
                 </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          )}
+              ))}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
 

@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { apiFetch } from "../../utilits/api";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -128,38 +127,17 @@ const clients = [
 ];
 
 export function ClientList({ onPageChange }) {
-  const [clients, setClients] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  useEffect(() => {
-    const loadClients = async () => {
-      try {
-        setLoading(true);
-        const data = await apiFetch('public/clients');
-        setClients(data || []);
-        setError("");
-      } catch (err) {
-        console.error('Load clients error', err);
-        setError('Failed to load clients');
-        setClients([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadClients();
-  }, []);
-
   const filteredClients = clients.filter((client) => {
     const matchesSearch =
-      (client.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (client.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (client.phone || '').includes(searchTerm);
+      client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.phone.includes(searchTerm);
 
     const matchesStatus =
-      statusFilter === "all" || (client.clientUser?.role || 'client') === statusFilter;
+      statusFilter === "all" || client.status === statusFilter;
 
     return matchesSearch && matchesStatus;
   });
@@ -208,11 +186,9 @@ export function ClientList({ onPageChange }) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">
-              {loading ? "..." : clients.length}
+              {clients.length}
             </div>
-            <p className="text-xs text-muted-foreground">
-              {loading ? "Loading..." : "+2 new this month"}
-            </p>
+            <p className="text-xs text-muted-foreground">+2 new this month</p>
           </CardContent>
         </Card>
 
@@ -225,7 +201,7 @@ export function ClientList({ onPageChange }) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-accent">
-              {loading ? "..." : clients.filter((c) => c.clientUser?.role === "client").length}
+              {clients.filter((c) => c.status === "active").length}
             </div>
             <p className="text-xs text-muted-foreground">Currently active</p>
           </CardContent>
@@ -240,7 +216,10 @@ export function ClientList({ onPageChange }) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">
-              {loading ? "..." : "$0.00"}
+              {formatCurrency(
+                clients.reduce((sum, c) => sum + c.totalSpend, 0) /
+                  clients.length
+              )}
             </div>
             <p className="text-xs text-muted-foreground">Per client</p>
           </CardContent>
@@ -255,7 +234,7 @@ export function ClientList({ onPageChange }) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">
-              {loading ? "..." : clients.reduce((sum, c) => sum + (c.appointments?.length || 0), 0)}
+              {clients.reduce((sum, c) => sum + c.upcomingAppointments, 0)}
             </div>
             <p className="text-xs text-muted-foreground">Scheduled</p>
           </CardContent>
@@ -286,59 +265,41 @@ export function ClientList({ onPageChange }) {
 
         {/* Table */}
         <CardContent>
-          {error && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-red-800">{error}</p>
-            </div>
-          )}
-          
-          {loading ? (
-            <div className="flex justify-center items-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              <span className="ml-2 text-muted-foreground">Loading clients...</span>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>Last Visit</TableHead>
-                  <TableHead>Total Spend</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Treatments</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Client</TableHead>
+                <TableHead>Contact</TableHead>
+                <TableHead>Last Visit</TableHead>
+                <TableHead>Total Spend</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Treatments</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
 
-              <TableBody>
-                {filteredClients.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      {clients.length === 0 ? "No clients found" : "No clients match your search criteria"}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredClients.map((client) => (
+            <TableBody>
+              {filteredClients.map((client) => (
                 <TableRow key={client.id}>
                   {/* Client Info */}
                   <TableCell>
                     <div className="flex items-center space-x-3">
                       <Avatar>
+                        <AvatarImage src={client.avatar} alt={client.name} />
                         <AvatarFallback>
-                          {(client.name || 'Unknown')
+                          {client.name
                             .split(" ")
                             .map((n) => n[0])
                             .join("")}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-medium">{client.name || 'Unknown'}</p>
+                        <p className="font-medium">{client.name}</p>
                         <p className="text-sm text-muted-foreground">
-                          Client ID: {client.id}
+                          {client.age} years old
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          Member since {formatDate(client.created_at)}
+                          Member since {formatDate(client.memberSince)}
                         </p>
                       </div>
                     </div>
@@ -361,34 +322,35 @@ export function ClientList({ onPageChange }) {
                   {/* Last Visit */}
                   <TableCell>
                     <div className="text-sm">
-                      {client.appointments && client.appointments.length > 0 
-                        ? formatDate(client.appointments[0].created_at)
-                        : "No visits"
-                      }
+                      {formatDate(client.lastVisit)}
                     </div>
                   </TableCell>
 
                   {/* Spend */}
                   <TableCell>
                     <div className="font-medium">
-                      $0.00
+                      {formatCurrency(client.totalSpend)}
                     </div>
                   </TableCell>
 
                   {/* Status */}
                   <TableCell>
-                    <Badge variant="default">
-                      {client.clientUser?.role || 'client'}
+                    <Badge
+                      variant={client.status === "active" ? "default" : "secondary"}
+                    >
+                      {client.status}
                     </Badge>
                   </TableCell>
 
                   {/* Treatments */}
                   <TableCell>
                     <div className="text-sm">
-                      <div>{client.appointments?.length || 0} appointments</div>
-                      <div className="text-muted-foreground">
-                        {client.location?.name || 'No location'}
-                      </div>
+                      <div>{client.treatmentHistory} completed</div>
+                      {client.upcomingAppointments > 0 && (
+                        <div className="text-muted-foreground">
+                          {client.upcomingAppointments} upcoming
+                        </div>
+                      )}
                     </div>
                   </TableCell>
 
@@ -417,11 +379,9 @@ export function ClientList({ onPageChange }) {
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          )}
+              ))}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>

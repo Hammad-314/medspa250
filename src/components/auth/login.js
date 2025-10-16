@@ -7,6 +7,7 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Alert, AlertDescription } from "../ui/alert";
 import { useAuth } from "../auth-context";
+import { Signup } from "./Signup";
 import { Loader2, Sparkles } from "lucide-react";
 
 export function Login() {
@@ -14,6 +15,7 @@ export function Login() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showSignup, setShowSignup] = useState(false);
   const { login } = useAuth();
 
   const handleSubmit = async (e) => {
@@ -29,32 +31,15 @@ export function Login() {
     }
   };
 
-  const demoAccounts = [
-    {
-      email: "admin@medispa.com",
-      role: "Admin Dashboard",
-      description: "View KPIs, manage staff, locations",
-    },
-    {
-      email: "provider@medispa.com",
-      role: "Provider Dashboard",
-      description: "Today's appointments, treatment notes",
-    },
-    {
-      email: "reception@medispa.com",
-      role: "Reception Dashboard",
-      description: "Book appointments, check-ins",
-    },
-    {
-      email: "client@medispa.com",
-      role: "Client Portal",
-      description: "My appointments, documents, payments",
-    },
-  ];
+
+  // If showing signup, render signup component
+  if (showSignup) {
+    return <Signup switchToLogin={() => setShowSignup(false)} />;
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md space-y-6">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
+      <div className="w-full max-w-md space-y-8">
         {/* Logo / Header */}
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center space-x-2">
@@ -69,7 +54,7 @@ export function Login() {
         </div>
 
         {/* Login Form */}
-        <Card className="bg-card border border-border">
+        <Card className="bg-white border border-gray-200 shadow-xl">
           <CardHeader>
             <CardTitle className="text-foreground">Sign In</CardTitle>
             <CardDescription>
@@ -89,7 +74,7 @@ export function Login() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="bg-input-background border border-border focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  className="bg-white border border-gray-300 focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
               </div>
 
@@ -104,7 +89,7 @@ export function Login() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="bg-input-background border border-border focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  className="bg-white border border-gray-300 focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
               </div>
 
@@ -129,41 +114,20 @@ export function Login() {
                 )}
               </Button>
             </form>
+
+            {/* Signup Link */}
+            <div className="mt-4 text-center text-sm text-muted-foreground">
+              Don't have an account?{" "}
+              <button
+                onClick={() => setShowSignup(true)}
+                className="text-primary font-medium hover:underline"
+              >
+                Sign up
+              </button>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Demo Accounts */}
-        <Card className="bg-card border border-border">
-          <CardHeader>
-            <CardTitle className="text-lg text-foreground">
-              Demo Accounts
-            </CardTitle>
-            <CardDescription>
-              Use these accounts to explore different user roles (password:
-              <span className="font-semibold"> demo123</span>)
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {demoAccounts.map((account) => (
-              <div
-                key={account.email}
-                className="p-3 border border-border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors hover:border-primary/30"
-                onClick={() => {
-                  setEmail(account.email);
-                  setPassword("demo123");
-                }}
-              >
-                <div className="font-medium text-sm text-foreground">
-                  {account.role}
-                </div>
-                <div className="text-xs text-muted-foreground">{account.email}</div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {account.description}
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

@@ -1,16 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { AuthProvider, useAuth } from '../components/auth-context';
+import { AuthProvider, useAuth } from "../components/auth-context";
 import { Login } from "../components/auth/login";
 import { Sidebar } from "../components/layout/sidebar";
 import { AdminDashboard } from "../components/dashboards/admin-dashboard";
 import { ProviderDashboard } from "../components/dashboards/provider-dashboard";
-import  ReceptionDashboard  from "../components/dashboards/reception-dashboard";
-import  ClientDashboard  from "../components/dashboards/client-dashboard";
+import ReceptionDashboard from "../components/dashboards/reception-dashboard";
+import ClientDashboard from "../components/dashboards/client-dashboard";
 import { AppointmentCalendar } from "../components/appointments/appointment-calendar";
 import { BookAppointment } from "../components/appointments/book-appointment";
 import { AppointmentList } from "../components/appointments/appointment-list";
+import { MyAppointments } from "../components/appointments/my-appointments";
 import { ClientList } from "../components/clients/client-list";
 import { AddClient } from "../components/clients/add-client";
 import { PaymentPOS } from "../components/payments/payment-pos";
@@ -33,8 +34,8 @@ import { ClientAnalytics } from "../components/analytics/client-analytics";
 import { StaffPerformance } from "../components/analytics/staff-performance";
 import { AuditLog } from "../components/admin/audit-log";
 import { Compliance } from "../components/admin/compliance";
-import '../globals.css';
-import styles from './page.module.css';
+import "../globals.css";
+import styles from "./page.module.css";
 
 function AppContent() {
   const { user, isAuthenticated } = useAuth();
@@ -71,6 +72,8 @@ function AppContent() {
         return <BookAppointment onPageChange={handlePageChange} />;
       case "appointments/list":
         return <AppointmentList onPageChange={handlePageChange} />;
+      case "appointments/my":
+        return <MyAppointments onPageChange={handlePageChange} />;
       case "clients/list":
         return <ClientList onPageChange={handlePageChange} />;
       case "clients/add":

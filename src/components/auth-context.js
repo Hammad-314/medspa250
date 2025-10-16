@@ -12,6 +12,25 @@ export function useAuth() {
   return context;
 }
 
+// Helper functions for role and name detection
+const getRoleFromEmail = (email) => {
+  if (email === "admin@medispa.com") return "admin";
+  if (email === "provider@medispa.com") return "provider";
+  if (email === "reception@medispa.com") return "reception";
+  if (email === "client@medispa.com") return "client";
+  return "client"; // default role
+};
+
+const getUserNameFromEmail = (email) => {
+  if (email === "admin@medispa.com") return "Dr. Sarah Johnson";
+  if (email === "provider@medispa.com") return "Dr. Michael Chen";
+  if (email === "reception@medispa.com") return "Emma Williams";
+  if (email === "client@medispa.com") return "Jessica Martinez";
+  // Extract name from email for other users
+  const name = email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  return name;
+};
+
 // Mock users for demo (fallback)
 const mockUsers = {
   "admin@medispa.com": {
@@ -75,6 +94,22 @@ export function AuthProvider({ children }) {
       if (response.ok) {
         const userData = await response.json();
         setUser(userData);
+      } else if (response.status === 404) {
+        // User endpoint doesn't exist, create a basic user object from token
+        console.warn("User endpoint not found, creating basic user profile");
+        
+        // Try to get email from localStorage or use a default
+        const storedEmail = localStorage.getItem("user_email") || "user@example.com";
+        const role = getRoleFromEmail(storedEmail);
+        
+        const basicUser = {
+          id: "user_" + Date.now(),
+          name: getUserNameFromEmail(storedEmail),
+          email: storedEmail,
+          role: role,
+          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(getUserNameFromEmail(storedEmail))}&background=00A8E8&color=fff`
+        };
+        setUser(basicUser);
       } else {
         // Token is invalid, remove it
         localStorage.removeItem("access_token");
@@ -83,10 +118,28 @@ export function AuthProvider({ children }) {
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
-      // Remove invalid token
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("token_type");
-      localStorage.removeItem("expires_in");
+      // If it's a network error or 404, create a basic user instead of removing token
+      if (error.message.includes("404") || error.message.includes("fetch")) {
+        console.warn("Creating fallback user due to API error");
+        
+        // Try to get email from localStorage or use a default
+        const storedEmail = localStorage.getItem("user_email") || "user@example.com";
+        const role = getRoleFromEmail(storedEmail);
+        
+        const fallbackUser = {
+          id: "user_" + Date.now(),
+          name: getUserNameFromEmail(storedEmail),
+          email: storedEmail,
+          role: role,
+          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(getUserNameFromEmail(storedEmail))}&background=00A8E8&color=fff`
+        };
+        setUser(fallbackUser);
+      } else {
+        // Remove invalid token for other errors
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("token_type");
+        localStorage.removeItem("expires_in");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -109,14 +162,20 @@ export function AuthProvider({ children }) {
         throw new Error(data.error || data.message || "Invalid email or password");
       }
 
-      // Save token
+      // Save token and email
       if (data.access_token) {
         localStorage.setItem("access_token", data.access_token);
         localStorage.setItem("token_type", data.token_type || "bearer");
         localStorage.setItem("expires_in", data.expires_in);
+        localStorage.setItem("user_email", email); // Store email for role detection
 
-        // Fetch user data
-        await fetchUserData(data.access_token);
+        // If user data is included in login response, use it
+        if (data.user) {
+          setUser(data.user);
+        } else {
+          // Fetch user data from separate endpoint
+          await fetchUserData(data.access_token);
+        }
       } else {
         throw new Error("No access token returned from server");
       }
@@ -151,10 +210,11 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
-    // Remove token from localStorage
+    // Remove token and user data from localStorage
     localStorage.removeItem("access_token");
     localStorage.removeItem("token_type");
     localStorage.removeItem("expires_in");
+    localStorage.removeItem("user_email");
     setUser(null);
   };
 

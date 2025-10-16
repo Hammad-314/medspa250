@@ -53,6 +53,12 @@ const navigationItems = [
         icon: Calendar,
         roles: ["admin", "provider", "reception"],
       },
+      {
+        id: "appointments/my",
+        label: "My Appointments",
+        icon: Calendar,
+        roles: ["client"],
+      },
     ],
   },
   {
