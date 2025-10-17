@@ -407,3 +407,4 @@ export function MyAppointments({ onPageChange }) {
     </div>
   );
 }
+
